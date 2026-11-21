@@ -1,1 +1,11 @@
-# Task 7 落地：Streamable HTTP 传输（protocol=STREAMABLE、/mcp 端点、端口与可选 Bearer Token）
+# Streamable HTTP 模式：远程 Agent 接入；可选 Bearer Token（jx.http-token）
+spring:
+  ai:
+    mcp:
+      server:
+        protocol: STREAMABLE
+        streamable-http:
+          mcp-endpoint: /mcp
+
+server:
+  port: ${HTTP_PORT:8080}

@@ -1,1 +1,15 @@
-# Task 7 落地：非 web 应用 + STDIO 传输 + 日志改走文件（stdout 是协议通道）
+# STDIO 模式：stdout 是协议通道，任何日志/输出都不得写入控制台
+spring:
+  main:
+    web-application-type: none
+    banner-mode: off
+  ai:
+    mcp:
+      server:
+        stdio: true
+
+logging:
+  file:
+    name: logs/jx-mcp.log
+  pattern:
+    console: ""
