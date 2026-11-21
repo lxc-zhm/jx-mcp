@@ -2,8 +2,7 @@ package com.jxmcp.rag;
 
 import com.jxmcp.JxMcpApplication;
 import com.jxmcp.support.FixedEmbeddingModel;
-import com.jxmcp.support.PgTestBase;
-import org.junit.jupiter.api.Test;
+import com.jxmcp.support.PgTestBase;import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;

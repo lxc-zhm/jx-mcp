@@ -30,7 +30,7 @@ public class FixedEmbeddingModel implements EmbeddingModel {
         return vectorFor(document.getText());
     }
 
-    static float[] vectorFor(String text) {
+    public static float[] vectorFor(String text) {
         float[] v = new float[1024];
         String t = text == null ? "" : text.toLowerCase();
         if (t.contains("apple")) {

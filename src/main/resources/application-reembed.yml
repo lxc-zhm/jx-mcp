@@ -1,1 +1,8 @@
-# Task 8 落地：原地重嵌维护模式（MCP 关闭、非 web、ApplicationRunner 跑完退出）
+# 原地重嵌维护模式：CLI 命令，跑完即退；不启用 MCP 与 web
+spring:
+  main:
+    web-application-type: none
+  ai:
+    mcp:
+      server:
+        enabled: false
