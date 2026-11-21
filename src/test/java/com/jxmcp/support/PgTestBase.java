@@ -62,4 +62,11 @@ public abstract class PgTestBase {
     public static String jdbcUrl() {
         return POSTGRES.getJdbcUrl();
     }
+
+    @org.springframework.test.context.DynamicPropertySource
+    static void pgProperties(org.springframework.test.context.DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", () -> APP_USER);
+        registry.add("spring.datasource.password", () -> APP_PASSWORD);
+    }
 }

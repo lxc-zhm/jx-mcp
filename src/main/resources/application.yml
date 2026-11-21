@@ -7,6 +7,14 @@ spring:
     password: ${DB_PASSWORD:jx_mcp_app}
   ai:
     model:
+      # 本 server 只做 embedding + 工具，关闭不需要的模型能力，避免无关 starter 强制要 API key
+      chat: none
+      image: none
+      moderation: none
+      decision: none
+      audio:
+        speech: none
+        transcription: none
       embedding: ${EMBEDDING_PROVIDER:ollama}
     ollama:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
