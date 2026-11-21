@@ -8,6 +8,17 @@ spring:
   ai:
     model:
       embedding: ${EMBEDDING_PROVIDER:ollama}
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      embedding:
+        options:
+          model: ${OLLAMA_MODEL:bge-m3}
+    vectorstore:
+      pgvector:
+        initialize-schema: false
+        dimensions: ${EMBEDDING_DIM:1024}
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
     mcp:
       server:
         name: jx-mcp
@@ -15,6 +26,3 @@ spring:
         type: SYNC
         annotation-scanner:
           enabled: true
-    vectorstore:
-      pgvector:
-        initialize-schema: false
