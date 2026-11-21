@@ -78,8 +78,10 @@ Claude Desktop / ZCode 的 MCP 配置示例：
 **Streamable HTTP（远程 Agent）**
 
 ```bash
-HTTP_PORT=8080 jx.http-token=secret java -jar target/jx-mcp-0.1.0.jar --spring.profiles.active=http
+JX_HTTP_TOKEN=secret HTTP_PORT=8080 java -jar target/jx-mcp-0.1.0.jar --spring.profiles.active=http
 ```
+
+> 注：`jx.http-token` 也可用 `--jx.http-token=secret` 命令行参数或 `env 'jx.http-token=secret'` 形式提供（Spring Boot relaxed binding：环境变量 `JX_HTTP_TOKEN` 自动映射）。
 
 客户端指向 `http://<host>:8080/mcp`（配了 token 则带 `Authorization: Bearer <token>`）。
 

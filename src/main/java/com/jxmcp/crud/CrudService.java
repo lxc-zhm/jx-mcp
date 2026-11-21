@@ -9,6 +9,7 @@ import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.Limit;
 import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.ParenthesedSelect;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -42,15 +43,30 @@ public class CrudService {
         if (SqlGuard.typeOf(st) != SqlGuard.SqlType.SELECT) {
             throw new SqlGuardException("query 只接受 SELECT");
         }
-        String effective = sql;
-        // 无 LIMIT 的普通 SELECT 强制加 LIMIT；UNION/CTE 等复合形式保持原样
-        if (st instanceof PlainSelect plain && plain.getLimit() == null) {
-            Limit limit = new Limit();
-            limit.setRowCount(new LongValue(props.getForcedLimit()));
-            plain.setLimit(limit);
+        int forced = props.getForcedLimit();
+        String effective;
+        if (st instanceof PlainSelect plain) {
+            forceOrCapLimit(plain);
             effective = st.toString();
+        } else if (st instanceof ParenthesedSelect paren && paren.getSelect() instanceof PlainSelect inner) {
+            forceOrCapLimit(inner);
+            effective = st.toString();
+        } else {
+            // UNION 等复合形态无法在 AST 上直接注入，外包一层强制 LIMIT
+            effective = "SELECT * FROM (" + sql + ") AS jx_forced LIMIT " + forced;
         }
         return jdbc.queryForList(effective, Map.of());
+    }
+
+    private void forceOrCapLimit(PlainSelect plain) {
+        Limit limit = plain.getLimit();
+        if (limit == null) {
+            Limit forced = new Limit();
+            forced.setRowCount(new LongValue(props.getForcedLimit()));
+            plain.setLimit(forced);
+        } else if (limit.getRowCount() instanceof LongValue lv && lv.getValue() > props.getForcedLimit()) {
+            limit.setRowCount(new LongValue(props.getForcedLimit()));
+        }
     }
 
     public int executeDml(String sql, Map<String, Object> params) {
@@ -69,7 +85,9 @@ public class CrudService {
         row.keySet().forEach(this::requireIdentifier);
         String cols = String.join(", ", row.keySet());
         String placeholders = row.keySet().stream().map(c -> ":" + c).collect(Collectors.joining(", "));
-        return jdbc.update("INSERT INTO " + t + " (" + cols + ") VALUES (" + placeholders + ")", row);
+        String sql = "INSERT INTO " + t + " (" + cols + ") VALUES (" + placeholders + ")";
+        guard.parseAndValidate(sql);
+        return jdbc.update(sql, row);
     }
 
     public int update(String table, Map<String, Object> set, String where, Map<String, Object> params) {
@@ -86,13 +104,16 @@ public class CrudService {
         String assignments = set.keySet().stream()
                 .map(c -> c + " = :set_" + c)
                 .collect(Collectors.joining(", "));
-        return jdbc.update("UPDATE " + t + " SET " + assignments + whereClause("UPDATE", where), all);
+        String sql = "UPDATE " + t + " SET " + assignments + whereClause("UPDATE", where);
+        guard.parseAndValidate(sql);
+        return jdbc.update(sql, all);
     }
 
     public int delete(String table, String where, Map<String, Object> params) {
         String t = requireIdentifier(table);
-        return jdbc.update("DELETE FROM " + t + whereClause("DELETE", where),
-                params == null ? Map.of() : params);
+        String sql = "DELETE FROM " + t + whereClause("DELETE", where);
+        guard.parseAndValidate(sql);
+        return jdbc.update(sql, params == null ? Map.of() : params);
     }
 
     public List<String> listTables() {
@@ -119,6 +140,10 @@ public class CrudService {
                         action + " 缺少 WHERE 条件，默认拒绝（可用 jx.allow-where-less-mutation 放开）");
             }
             return "";
+        }
+        if (where.contains(";")) {
+            // 分号在布尔表达式里没有合法用途，却是 JSqlParser 表达式截断/多语句注入的分界
+            throw new SqlGuardException("WHERE 条件不允许包含分号，已拒绝: " + where);
         }
         try {
             CCJSqlParserUtil.parseExpression(where);

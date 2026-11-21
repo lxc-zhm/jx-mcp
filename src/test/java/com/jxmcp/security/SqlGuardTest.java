@@ -63,6 +63,19 @@ class SqlGuardTest {
         assertThat(SqlGuard.typeOf(st)).isEqualTo(SqlGuard.SqlType.DELETE);
     }
 
+    @Test
+    void cte_dml_in_select_rejected() {
+        // CTE 体是数据修改语句时，顶层 SELECT 只是外壳——必须整体拒绝
+        assertRejected("WITH d AS (DELETE FROM t RETURNING *) SELECT count(*) FROM d");
+        assertRejected("WITH d AS (INSERT INTO t VALUES (1) RETURNING *) SELECT * FROM d");
+        assertRejected("WITH d AS (UPDATE t SET a=1 RETURNING *) SELECT count(*) FROM d");
+    }
+
+    @Test
+    void cte_dml_in_dml_rejected() {
+        assertRejected("WITH d AS (DELETE FROM t RETURNING *) DELETE FROM t WHERE id=1");
+    }
+
     private void assertType(String sql, SqlGuard.SqlType expected) {
         Statement st = guard.parseAndValidate(sql);
         assertThat(SqlGuard.typeOf(st)).isEqualTo(expected);

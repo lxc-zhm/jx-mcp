@@ -9,6 +9,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,8 +37,9 @@ public class VectorTools {
 
     @McpTool(name = "vector_upsert", description =
             "写入/更新一个 RAG 文档：按块切分并自动 embedding 存入 pgvector。同 doc_id 重复调用为替换语义。"
-                    + "切勿用 insert/update 直接写 vector_store 表——那会绕过 embedding，造成内容与向量不一致，检索质量劣化；"
+                    + "切勿用 insert/update 直接写 vector_store 表——那会绕过 embedding，造成内容与向量不一致，"
                     + "如已直写，可用 reembed 维护命令修复。")
+    @Transactional
     public String upsert(
             @McpToolParam(description = "文档唯一 ID，重复调用替换旧内容") String docId,
             @McpToolParam(description = "文档原文，长文本自动分块") String content,

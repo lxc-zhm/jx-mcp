@@ -65,6 +65,28 @@ class CrudServiceTest extends PgTestBase {
     }
 
     @Test
+    void query_parenthesized_forces_limit() {
+        assertThat(limitedService().query("(SELECT * FROM demo_customers)")).hasSize(3);
+    }
+
+    @Test
+    void query_union_forces_limit() {
+        assertThat(limitedService().query(
+                "SELECT name FROM demo_customers UNION ALL SELECT product FROM demo_orders")).hasSize(3);
+    }
+
+    @Test
+    void query_caps_larger_explicit_limit() {
+        assertThat(limitedService().query("SELECT * FROM demo_customers LIMIT 99999999")).hasSize(3);
+    }
+
+    private CrudService limitedService() {
+        JxProperties props = new JxProperties();
+        props.setForcedLimit(3);
+        return new CrudService(new org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate(appDataSource()), props);
+    }
+
+    @Test
     void insert_roundtrip_special_chars() {
         String evil = "O'Brien\"; DROP TABLE demo_customers; --";
         int inserted = service.insert("demo_customers", Map.of("name", evil, "city", "注入测试"));
@@ -106,6 +128,16 @@ class CrudServiceTest extends PgTestBase {
         assertThat(n).isEqualTo(1);
         assertThat(service.query("SELECT status FROM demo_orders WHERE product = '台灯'")
                 .get(0).get("status")).isEqualTo("paid");
+    }
+
+    @Test
+    void where_with_statement_injection_rejected() {
+        Long before = (Long) service.query("SELECT count(*) AS n FROM demo_customers").get(0).get("n");
+        assertThatThrownBy(() -> service.delete("demo_customers",
+                "id = 0; INSERT INTO demo_customers (name, city) VALUES ('injected', 'via-where')", null))
+                .isInstanceOf(SqlGuardException.class);
+        Long after = (Long) service.query("SELECT count(*) AS n FROM demo_customers").get(0).get("n");
+        assertThat(after).isEqualTo(before);
     }
 
     @Test
