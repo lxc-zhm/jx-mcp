@@ -1,6 +1,7 @@
 -- 向量表的 DDL 由本特权脚本一次性负责；应用以受限角色 + initialize-schema=false 运行
+-- 严格模式：GENERATED ALWAYS 禁止应用手工指定 id，数据库强制单调递增
 CREATE TABLE IF NOT EXISTS vector_store (
-    id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     content   TEXT,
     metadata  JSON,
     embedding VECTOR(1024)

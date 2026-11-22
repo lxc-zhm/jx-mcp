@@ -92,6 +92,20 @@ class VectorToolsTest extends PgTestBase {
     }
 
     @Test
+    void vector_ids_are_monotonic_bigints() {
+        clearVectorStore();
+        vectorTools.upsert("doc-a", "first document content", Map.of());
+        vectorTools.upsert("doc-b", "second document content", Map.of());
+
+        List<Long> ids = jdbc.queryForList("SELECT id FROM vector_store ORDER BY id",
+                Map.of(), Long.class);
+        assertThat(ids).isNotEmpty();
+        for (int i = 1; i < ids.size(); i++) {
+            assertThat(ids.get(i)).as("id at %d", i).isGreaterThan(ids.get(i - 1));
+        }
+    }
+
+    @Test
     void tool_descriptions_warn_vector_bypass() throws Exception {
         for (String method : List.of("upsert", "search", "delete")) {
             var ann = VectorTools.class.getMethod(method,

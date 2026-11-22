@@ -1,12 +1,13 @@
 package com.jxmcp.rag;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,8 @@ import java.util.Map;
 
 /**
  * RAG 向量工具：写入自动分块并 embedding；检索走 pgvector HNSW。
+ * 写入自实现 SQL（id 由数据库 GENERATED ALWAYS identity 严格生成，PgVectorStore 的
+ * BIGSERIAL 写入路径要求应用自带数字 id，与严格模式冲突）；读取复用 VectorStore。
  * 直接用 CRUD 工具改 vector_store 会绕过 embedding 导致内容与向量不一致。
  */
 @Component
@@ -26,11 +29,14 @@ public class VectorTools {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final VectorStore store;
+    private final EmbeddingModel model;
     private final TextChunker chunker;
     private final NamedParameterJdbcTemplate jdbc;
 
-    public VectorTools(VectorStore store, TextChunker chunker, NamedParameterJdbcTemplate jdbc) {
+    public VectorTools(VectorStore store, EmbeddingModel model, TextChunker chunker,
+                       NamedParameterJdbcTemplate jdbc) {
         this.store = store;
+        this.model = model;
         this.chunker = chunker;
         this.jdbc = jdbc;
     }
@@ -47,15 +53,22 @@ public class VectorTools {
             Map<String, Object> metadata) {
         List<String> chunks = chunker.chunk(content);
         Map<String, Object> base = metadata == null ? Map.of() : metadata;
-        List<Document> docs = new ArrayList<>();
-        for (String chunk : chunks) {
+        // 先向量化再入库：DELETE 与写入同事务，embedding 失败整体回滚不丢原文
+        List<float[]> vectors = model.embed(chunks);
+        List<MapSqlParameterSource> batch = new ArrayList<>();
+        for (int i = 0; i < chunks.size(); i++) {
             Map<String, Object> meta = new HashMap<>(base);
             meta.put("doc_id", docId);
-            docs.add(Document.builder().text(chunk).metadata(meta).build());
+            batch.add(new MapSqlParameterSource()
+                    .addValue("content", chunks.get(i))
+                    .addValue("meta", toJson(meta))
+                    .addValue("emb", vectorLiteral(vectors.get(i))));
         }
         jdbc.update("DELETE FROM vector_store WHERE metadata->>'doc_id' = :docId", Map.of("docId", docId));
-        store.add(docs);
-        return "{\"doc_id\":\"%s\",\"chunks\":%d}".formatted(docId, docs.size());
+        batch.forEach(p -> jdbc.update(
+                "INSERT INTO vector_store (content, metadata, embedding) "
+                        + "VALUES (:content, CAST(:meta AS json), CAST(:emb AS vector))", p));
+        return "{\"doc_id\":\"%s\",\"chunks\":%d}".formatted(docId, batch.size());
     }
 
     @McpTool(name = "vector_search", description =
@@ -97,5 +110,24 @@ public class VectorTools {
     public int delete(@McpToolParam(description = "文档唯一 ID") String docId) {
         return jdbc.update("DELETE FROM vector_store WHERE metadata->>'doc_id' = :docId",
                 Map.of("docId", docId));
+    }
+
+    private String toJson(Map<String, Object> meta) {
+        try {
+            return JSON.writeValueAsString(meta);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new IllegalStateException("元数据序列化失败", e);
+        }
+    }
+
+    private String vectorLiteral(float[] vec) {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < vec.length; i++) {
+            if (i > 0) {
+                sb.append(',');
+            }
+            sb.append(vec[i]);
+        }
+        return sb.append(']').toString();
     }
 }

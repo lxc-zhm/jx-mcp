@@ -2,9 +2,9 @@ spring:
   application:
     name: jx-mcp
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/jx}
-    username: ${DB_USER:jx_mcp_app}
-    password: ${DB_PASSWORD:jx_mcp_app}
+    url: ${DB_URL:jdbc:postgresql://postgres-pgvector.orb.local:5432/jx}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:zxcv+1234}
   ai:
     model:
       # 本 server 只做 embedding + 工具，关闭不需要的模型能力，避免无关 starter 强制要 API key
@@ -24,6 +24,7 @@ spring:
     vectorstore:
       pgvector:
         initialize-schema: false
+        id-type: BIGSERIAL
         dimensions: ${EMBEDDING_DIM:1024}
         index-type: HNSW
         distance-type: COSINE_DISTANCE

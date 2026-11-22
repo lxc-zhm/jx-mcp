@@ -8,7 +8,6 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,16 +23,15 @@ class ReembedRunnerTest extends PgTestBase {
         jdbc.getJdbcTemplate().execute("DELETE FROM vector_store");
     }
 
-    private UUID insertRow(String content) {
+    private Long insertRow(String content) {
         // 插入与内容无关的旧向量（全 9），重嵌后必须变成 FixedEmbeddingModel 的确定性向量
         float[] old = new float[1024];
         java.util.Arrays.fill(old, 9.0f);
-        UUID id = UUID.randomUUID();
-        jdbc.update("INSERT INTO vector_store (id, content, embedding) VALUES (:id, :content, CAST(:emb AS vector))",
+        Long id = jdbc.queryForObject(
+                "INSERT INTO vector_store (content, embedding) VALUES (:content, CAST(:emb AS vector)) RETURNING id",
                 new MapSqlParameterSource()
-                        .addValue("id", id)
                         .addValue("content", content)
-                        .addValue("emb", toVectorLiteral(old)));
+                        .addValue("emb", toVectorLiteral(old)), Long.class);
         return id;
     }
 
@@ -48,7 +46,7 @@ class ReembedRunnerTest extends PgTestBase {
         return sb.append(']').toString();
     }
 
-    private float[] readEmbedding(UUID id) {
+    private float[] readEmbedding(Long id) {
         String text = jdbc.queryForObject(
                 "SELECT embedding::text FROM vector_store WHERE id = :id",
                 new MapSqlParameterSource().addValue("id", id), String.class);
@@ -62,9 +60,9 @@ class ReembedRunnerTest extends PgTestBase {
 
     @Test
     void reembed_rewrites_all_embeddings() {
-        UUID a = insertRow("apple pie");
-        UUID b = insertRow("banana split");
-        UUID c = insertRow("cherry cake");
+        Long a = insertRow("apple pie");
+        Long b = insertRow("banana split");
+        Long c = insertRow("cherry cake");
 
         int processed = runner.reembedAll(2);
         assertThat(processed).isEqualTo(3);

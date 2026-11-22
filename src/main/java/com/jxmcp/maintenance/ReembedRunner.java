@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * 原地重嵌维护命令（CLI，非 MCP 工具——避免 LLM 误触发批量重写）：
@@ -42,7 +41,7 @@ public class ReembedRunner implements ApplicationRunner {
 
     public int reembedAll(int batchSize) {
         int total = 0;
-        UUID lastId = null;
+        Long lastId = null;
         while (true) {
             MapSqlParameterSource params = new MapSqlParameterSource().addValue("batch", batchSize);
             String sql = "SELECT id, content FROM vector_store";
@@ -58,7 +57,7 @@ public class ReembedRunner implements ApplicationRunner {
             List<String> contents = rows.stream().map(r -> (String) r.get("content")).toList();
             List<float[]> vectors = model.embed(contents);
             for (int i = 0; i < rows.size(); i++) {
-                UUID id = (UUID) rows.get(i).get("id");
+                Long id = ((Number) rows.get(i).get("id")).longValue();
                 jdbc.update("UPDATE vector_store SET embedding = CAST(:vec AS vector) WHERE id = :id",
                         new MapSqlParameterSource()
                                 .addValue("vec", vectorValue(vectors.get(i)))
