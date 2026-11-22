@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  jx-mcp 日志配置（logback-spring.xml 由 Spring Boot 按激活 profile 应用）
+
+  - stdio：stdout 是 MCP 协议通道，任何日志都不得写入 → 只挂 FILE appender
+    （不能再用 logging.pattern.console="" 的方式：空 pattern 会让 PatternLayout
+      报 "Empty or null pattern"，且该 ERROR status 本身就会打到 stdout）
+  - !stdio（http / reembed）：控制台 + 文件（logging.file.name 见 application.yml）
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProfile name="stdio">
+        <include resource="org/springframework/boot/logging/logback/file-appender.xml"/>
+        <root level="INFO">
+            <appender-ref ref="FILE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="!stdio">
+        <include resource="org/springframework/boot/logging/logback/file-appender.xml"/>
+        <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </root>
+    </springProfile>
+</configuration>

@@ -1,3 +1,8 @@
+logging:
+  # 所有模式统一落盘；stdio 模式仅文件，其他模式文件+控制台（见 logback-spring.xml）
+  file:
+    name: logs/jx-mcp.log
+
 spring:
   application:
     name: jx-mcp

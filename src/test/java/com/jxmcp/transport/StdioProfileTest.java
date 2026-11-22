@@ -17,7 +17,6 @@ class StdioProfileTest {
             assertThat(context).hasNotFailed();
             assertThat(context.getEnvironment().getProperty("spring.main.web-application-type")).isEqualTo("none");
             assertThat(context.getEnvironment().getProperty("spring.ai.mcp.server.stdio")).isEqualTo("true");
-            assertThat(context.getEnvironment().getProperty("logging.pattern.console")).isEqualTo("");
             assertThat(context.getEnvironment().getProperty("logging.file.name")).isEqualTo("logs/jx-mcp.log");
         });
     }
