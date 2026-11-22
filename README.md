@@ -51,6 +51,8 @@ ollama pull bge-m3
 | `jx.http-token` | http 模式 Bearer Token（配置后 /mcp 需鉴权） | 空 = 不鉴权 |
 | `jx.allow-where-less-mutation` | 放开无 WHERE 的 UPDATE/DELETE | `false` |
 | `jx.chunk-size` / `jx.chunk-overlap` | RAG 分块参数 | `800` / `120` |
+| `jx.http-log-enabled` | http 模式请求/响应详细日志开关 | `true` |
+| `jx.http-log-max-body-chars` | 详细日志中请求/响应体最大字符数（超出截断） | `2048` |
 
 ## 启动与接入
 
@@ -84,6 +86,15 @@ JX_HTTP_TOKEN=secret HTTP_PORT=8080 java -jar target/jx-mcp-0.1.0.jar --spring.p
 > 注：`jx.http-token` 也可用 `--jx.http-token=secret` 命令行参数或 `env 'jx.http-token=secret'` 形式提供（Spring Boot relaxed binding：环境变量 `JX_HTTP_TOKEN` 自动映射）。
 
 客户端指向 `http://<host>:8080/mcp`（配了 token 则带 `Authorization: Bearer <token>`）。
+
+**请求/响应详细日志**（http 模式默认开启）：每个请求两行 INFO，同一 `req-id` 关联，落盘到 `logs/jx-mcp.log`：
+
+```
+==> req-1a2b3c4d POST /mcp headers={content-type=application/json, authorization=***} body={"jsonrpc":"2.0","method":"initialize",...}
+<== req-1a2b3c4d 200 application/json (12ms) headers={mcp-session-id=...} body={"jsonrpc":"2.0","id":1,"result":{...}}
+```
+
+`Authorization`/`Cookie` 等敏感头自动脱敏为 `***`；body 超出 `jx.http-log-max-body-chars` 截断；SSE 流式响应直通下发不受影响（日志只捕获前缀）。
 
 ## 换 embedding 模型（原地重嵌）
 

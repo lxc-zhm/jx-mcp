@@ -22,7 +22,7 @@ class CrudServiceTest extends PgTestBase {
 
     @BeforeEach
     void setUp() {
-        JxProperties props = new JxProperties(1000, false, null, 800, 120);
+        JxProperties props = new JxProperties(1000, false, null, 800, 120, true, 2048);
         service = new CrudService(new org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate(appDataSource()), props);
     }
 
@@ -52,7 +52,7 @@ class CrudServiceTest extends PgTestBase {
 
     @Test
     void query_forces_limit_when_missing() {
-        JxProperties props = new JxProperties(3, false, null, 800, 120);
+        JxProperties props = new JxProperties(3, false, null, 800, 120, true, 2048);
         CrudService limited = new CrudService(
                 new org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate(appDataSource()), props);
         assertThat(limited.query("SELECT * FROM demo_customers")).hasSize(3);
@@ -80,7 +80,7 @@ class CrudServiceTest extends PgTestBase {
     }
 
     private CrudService limitedService() {
-        JxProperties props = new JxProperties(3, false, null, 800, 120);
+        JxProperties props = new JxProperties(3, false, null, 800, 120, true, 2048);
         return new CrudService(new org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate(appDataSource()), props);
     }
 

@@ -1,6 +1,6 @@
-package com.jxmcp.rag;
+package com.jxmcp.config;
 
-import com.jxmcp.config.JxProperties;
+import com.jxmcp.rag.TextChunker;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

@@ -41,9 +41,9 @@ public class VectorDimensionChecker {
             throw new IllegalStateException(
                     "vector_store 表不存在或缺少 embedding 列——请先由管理员执行 db-init/01、02 脚本（应用以受限角色运行，不做 initialize-schema）");
         }
-        Matcher m = VECTOR_TYPE.matcher(types.get(0));
+        Matcher m = VECTOR_TYPE.matcher(types.getFirst());
         if (!m.matches()) {
-            throw new IllegalStateException("embedding 列类型异常: " + types.get(0) + "，应为 vector(N)");
+            throw new IllegalStateException("embedding 列类型异常: " + types.getFirst() + "，应为 vector(N)");
         }
         int actualDim = Integer.parseInt(m.group(1));
         if (actualDim != configuredDim) {

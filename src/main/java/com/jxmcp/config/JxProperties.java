@@ -22,6 +22,12 @@ public record JxProperties(
         @DefaultValue("800") int chunkSize,
 
         /** 分块重叠（字符） */
-        @DefaultValue("120") int chunkOverlap
+        @DefaultValue("120") int chunkOverlap,
+
+        /** http 模式请求/响应详细日志开关（见 HttpLoggingFilter） */
+        @DefaultValue("true") boolean httpLogEnabled,
+
+        /** 详细日志中请求/响应体的最大字符数（超出截断） */
+        @DefaultValue("2048") int httpLogMaxBodyChars
 ) {
 }

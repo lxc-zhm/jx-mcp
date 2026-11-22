@@ -1,7 +1,6 @@
 package com.jxmcp.maintenance;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -18,11 +17,11 @@ import java.util.Map;
  * java -jar jx-mcp.jar --spring.profiles.active=reembed
  * 分批读取向量表原文 → 当前 provider 重新向量化 → 回写；幂等可重跑。
  */
+@Slf4j
 @Component
 @Profile("reembed")
 public class ReembedRunner implements ApplicationRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(ReembedRunner.class);
     private static final int DEFAULT_BATCH_SIZE = 100;
 
     private final NamedParameterJdbcTemplate jdbc;
