@@ -80,6 +80,12 @@
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
     </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.34</version> <!-- 请使用最新版本 -->
+      <scope>provided</scope>
+    </dependency>
 
     <!-- 测试 -->
     <dependency>

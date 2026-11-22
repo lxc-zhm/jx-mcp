@@ -35,7 +35,7 @@ public class CrudService {
     public CrudService(NamedParameterJdbcTemplate jdbc, JxProperties props) {
         this.jdbc = jdbc;
         this.props = props;
-        this.guard = new SqlGuard(props.isAllowWhereLessMutation());
+        this.guard = new SqlGuard(props.allowWhereLessMutation());
     }
 
     public List<Map<String, Object>> query(String sql) {
@@ -43,7 +43,7 @@ public class CrudService {
         if (SqlGuard.typeOf(st) != SqlGuard.SqlType.SELECT) {
             throw new SqlGuardException("query 只接受 SELECT");
         }
-        int forced = props.getForcedLimit();
+        int forced = props.forcedLimit();
         String effective;
         if (st instanceof PlainSelect plain) {
             forceOrCapLimit(plain);
@@ -62,10 +62,10 @@ public class CrudService {
         Limit limit = plain.getLimit();
         if (limit == null) {
             Limit forced = new Limit();
-            forced.setRowCount(new LongValue(props.getForcedLimit()));
+            forced.setRowCount(new LongValue(props.forcedLimit()));
             plain.setLimit(forced);
-        } else if (limit.getRowCount() instanceof LongValue lv && lv.getValue() > props.getForcedLimit()) {
-            limit.setRowCount(new LongValue(props.getForcedLimit()));
+        } else if (limit.getRowCount() instanceof LongValue lv && lv.getValue() > props.forcedLimit()) {
+            limit.setRowCount(new LongValue(props.forcedLimit()));
         }
     }
 
@@ -135,7 +135,7 @@ public class CrudService {
 
     private String whereClause(String action, String where) {
         if (where == null || where.isBlank()) {
-            if (!props.isAllowWhereLessMutation()) {
+            if (!props.allowWhereLessMutation()) {
                 throw new SqlGuardException(
                         action + " 缺少 WHERE 条件，默认拒绝（可用 jx.allow-where-less-mutation 放开）");
             }

@@ -9,6 +9,6 @@ public class RagConfig {
 
     @Bean
     public TextChunker textChunker(JxProperties props) {
-        return new TextChunker(props.getChunkSize(), props.getChunkOverlap());
+        return new TextChunker(props.chunkSize(), props.chunkOverlap());
     }
 }

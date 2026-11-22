@@ -27,13 +27,13 @@ public class McpBearerTokenFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return props.getHttpToken() == null || props.getHttpToken().isBlank();
+        return props.httpToken() == null || props.httpToken().isBlank();
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        String token = props.getHttpToken();
+        String token = props.httpToken();
         String provided = request.getHeader("Authorization");
         if (provided != null && provided.startsWith("Bearer ")
                 && MessageDigest.isEqual(token.getBytes(StandardCharsets.UTF_8),
